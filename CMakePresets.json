@@ -1,0 +1,149 @@
+{
+	"version": 3,
+	"cmakeMinimumRequired":
+	{
+		"major": 3,
+		"minor": 21,
+		"patch": 0
+	},
+
+	"configurePresets":
+	[
+		{
+			"name":      "windows-host",
+			"hidden":    true,
+			"condition": {"lhs":"${hostSystemName}", "type": "equals", "rhs":  "Windows"}
+		},
+		{
+			"name":      "non-windows-host",
+			"hidden":    true,
+			"condition": {"lhs":"${hostSystemName}", "type":"notEquals", "rhs":"Windows"}
+		},
+		{
+			"name":      "linux-host",
+			"hidden":    true,
+			"condition": {"lhs":"${hostSystemName}", "type":"equals", "rhs":"Linux"}
+		},
+		{
+			"name":      "native-target",
+			"hidden":    true,
+			"binaryDir": "${sourceDir}/build/${hostSystemName}-${presetName}",
+			"cacheVariables":
+			{
+				"CMAKE_CONFIGURATION_TYPES":      {"type":"STRING", "value":"Debug;RelWithDebInfo"},
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/lib/${hostSystemName}-${presetName}"},
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/bin/${hostSystemName}-${presetName}"},
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/bin/${hostSystemName}-${presetName}"},
+				"CMAKE_INSTALL_PREFIX":           {"type":"PATH",   "value":"${sourceDir}/package}"}
+			}
+		},
+		{
+			"name":      "windows-target",
+			"hidden":    true,
+			"binaryDir": "${sourceDir}/build/Windows-${presetName}",
+			"cacheVariables":
+			{
+				"CMAKE_CONFIGURATION_TYPES":      {"type":"STRING", "value":"Debug;RelWithDebInfo"},
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/lib/Windows-${presetName}"},
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/bin/Windows-${presetName}"},
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/bin/Windows-${presetName}"},
+				"CMAKE_INSTALL_PREFIX":           {"type":"PATH",   "value":"${sourceDir}/package}"}
+			}
+		},
+		{
+			"name":           "ninja",
+			"hidden":         true,
+			"generator":      "Ninja Multi-Config",
+			"inherits":       ["non-windows-host"]
+		},
+		{
+			"name":           "vs",
+			"hidden":         true,
+			"binaryDir":      "${sourceDir}/build/windows-${presetName}",
+			"inherits":       ["windows-host", "windows-target"]
+		},
+		{
+			"name":           "gcc",
+			"hidden":         true,
+			"environment":    {"CC":"gcc", "CXX":"g++"}
+		},
+		{
+			"name":           "clang",
+			"hidden":         true,
+			"environment":    {"CC":"clang", "CXX":"clang++"}
+		},
+		{
+			"name":           "android-common",
+			"hidden":         true,
+			"generator":      "Unix Makefiles",
+			"binaryDir":      "${sourceDir}/build/${presetName}",
+			"cacheVariables":
+			{
+				"CMAKE_ARCHIVE_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/lib/${presetName}"},
+				"CMAKE_LIBRARY_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/bin/${presetName}"},
+				"CMAKE_RUNTIME_OUTPUT_DIRECTORY": {"type":"PATH",   "value":"${sourceDir}/bin/${presetName}"},
+				"CMAKE_INSTALL_PREFIX":           {"type":"PATH",   "value":"${sourceDir}/package}"},
+				"ANDROID_NDK":                    {"type":"PATH",   "value":"$env{ANDROID_NDK}"},
+				"ANDROID_PLATFORM":               {"type":"STRING", "value":"android-21"}
+			}
+		},
+		{
+			"name":           "android-make",
+			"hidden":         true,
+			"generator":      "Unix Makefiles",
+			"inherits":       ["android-common"],
+			"cacheVariables":
+			{
+				"CMAKE_TOOLCHAIN_FILE": {"type":"FILEPATH", "value":"$env{ANDROID_NDK}/build/cmake/android.toolchain.cmake"},
+				"CMAKE_MAKE_PROGRAM":   {"type":"FILEPATH", "value":"${sourceDir}/tests/android-make.cmd"}
+			}
+		},
+		{
+			"name":           "android-aarch64",
+			"hidden":         true,
+			"cacheVariables": {"ANDROID_ABI": {"type":"STRING", "value":"arm64-v8a"}}
+		},
+		{
+			"name":           "android-aarch64-make-clang",
+			"hidden":         true,
+			"inherits":       ["android-make", "android-aarch64"]
+		},
+		{
+			"name":           "debug",
+			"hidden":         true,
+			"cacheVariables": {"CMAKE_BUILD_TYPE":{"type":"STRING", "value":"Debug"}}
+		},
+		{
+			"name":           "relwithdebinfo",
+			"hidden":         true,
+			"cacheVariables": {"CMAKE_BUILD_TYPE":{"type":"STRING", "value":"RelWithDebInfo"}}
+		},
+
+		{"name":"vs2022", "hidden":true, "generator":"Visual Studio 17 2022",     "inherits": ["vs"]},
+		{"name":"vs-x64", "hidden":true, "architecture":"x64"},
+
+		{"name":"vs2022-x64-msvc",       "displayName":"VS2022 x64",          "inherits":["vs2022","vs-x64"]},
+		{"name":"vs2022-x64-clangcl",    "displayName":"VS2022 x64 ClangCL",  "inherits":["vs2022","vs-x64"], "toolset":"ClangCL"},
+
+		{"name":"ninja-clang",       "inherits":[              "native-target",  "ninja", "clang"]},
+		{"name":"ninja-gcc",         "inherits":[              "native-target",  "ninja", "gcc"]},
+
+		{"name":"android-aarch64-make-clang-debug",          "displayName":"Android AArch64 Clang (Debug)",          "inherits":["android-aarch64-make-clang", "debug"]},
+		{"name":"android-aarch64-make-clang-relwithdebinfo", "displayName":"Android AArch64 Clang (RelWithDebInfo)", "inherits":["android-aarch64-make-clang", "relwithdebinfo"]}
+	],
+
+	"buildPresets":
+	[
+		{"name":"vs2022-x64-msvc-debug",                     "configurePreset":"vs2022-x64-msvc",                           "displayName":"Debug",          "configuration":"Debug",          "targets":["histogram"]},
+		{"name":"vs2022-x64-clangcl-debug",                  "configurePreset":"vs2022-x64-clangcl",                        "displayName":"Debug",          "configuration":"Debug",          "targets":["histogram"]},
+
+		{"name":"ninja-clang-debug",                         "configurePreset":"ninja-clang",                               "displayName":"Debug",          "configuration":"Debug",          "targets":["histogram"]},
+		{"name":"ninja-gcc-debug",                           "configurePreset":"ninja-gcc",                                 "displayName":"Debug",          "configuration":"Debug",          "targets":["histogram"]},
+
+		{"name":"ninja-clang-relwithdebinfo",                "configurePreset":"ninja-clang",                               "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "targets":["histogram"]},
+		{"name":"ninja-gcc-relwithdebinfo",                  "configurePreset":"ninja-gcc",                                 "displayName":"RelWithDebInfo", "configuration":"RelWithDebInfo", "targets":["histogram"]},
+
+		{"name":"android-aarch64-make-clang-debug",          "configurePreset":"android-aarch64-make-clang-debug",          "displayName":"Debug",                                            "targets":["histogram"]},
+		{"name":"android-aarch64-make-clang-relwithdebinfo", "configurePreset":"android-aarch64-make-clang-relwithdebinfo", "displayName":"RelWithDebInfo",                                   "targets":["histogram"]}
+	]
+}
