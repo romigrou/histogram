@@ -23,7 +23,6 @@
 #include <cassert>
 #include <chrono>
 #include <cstdint>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <emmintrin.h>
